@@ -44,14 +44,14 @@ def getResContent(url):
 def getDocument(url):
 	return BeautifulSoup(getResContent(url), 'html.parser')
 
-def handleList(listUrl):
+def handleList(id, listUrl):
 	soup = getDocument(listUrl)
 
 	atitle = soup.find_all('a', class_='title')
 
 	for a in atitle:
 		prodhref = basedomain + a.get('href')
-		saveProd(prodhref)
+		saveProd(id, prodhref)
 		#print(prodhref)
 		break
 	return
@@ -60,29 +60,53 @@ def handleList(listUrl):
 	if nexta:
 		nexturl = basedomain + nexta[0].get('href')
 		#print(nexturl)
-		handleList(nexturl)
+		handleList(id, nexturl)
 
-def saveProd(url):
+def saveProd(id, url):
 	soup = getDocument(url)
 	
 	prodId = soup.find(id='goodsId')['value']
 	prodName = soup.find(class_='crumbs-title').string
+	#原产地
+	origCountry = soup.find(class_='orig-country').find('span').string
+	#品牌
+	brand = soup.find(class_='orig-country').find('a').string
 	
 	priceJson = getResContent(prodPriceUrl + prodId).decode('utf-8')
 	priceObj = json.loads(priceJson)
 	#print(priceObj)
+	#当前价格
 	prodPrice = priceObj['data']['currentPrice']
+	#市场价
 	marketPrice = priceObj['data']['marketPrice']
+	#x件装
+	memberCount = priceObj['data']['memberCount']
+	#折合单件价
+	memberPrice = priceObj['data']['memberPrice']
 
 	prodAttr = []
 	prodAttrLi = soup.find(class_='goods_parameter').find_all('li')
 	for p in prodAttrLi:
 		attr = p.string
 		attr = attr.split('：')
-		prodAttr.append(attr)
+		attrObj = {attr[0] : attr[1]}
+		prodAttr.append(attrObj)
 
-	print(prodId + '\t' + prodName + '\t' + str(prodPrice) + '\t' + str(marketPrice) + '\t')
+	print('商品id:' + prodId)
+	print('分类id:' + id)
+	print('商品名称:' + prodName)
+	print('原产地:' + origCountry)
+	print('品牌:' + brand)
+	print('x件装:' + str(memberCount))
+	print('折合单价:' + str(memberPrice))
+	print('价格:' + str(prodPrice))
+	print('市场价:' + str(marketPrice))
+	print('属性:' + str(prodAttr))
+	print()
 
-for id in listid:
-	url = listurl.replace('#id#', id)
-	handleList(url)
+#for id in listid:
+#	url = listurl.replace('#id#', id)
+#	handleList(id, url)
+
+saveProd('2620', 'http://www.kaola.com/product/28556.html')
+saveProd('2620', 'http://www.kaola.com/product/28011.html')
