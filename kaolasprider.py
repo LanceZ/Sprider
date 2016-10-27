@@ -23,7 +23,8 @@ httpheader = {'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,im
 basedomain = 'http://www.kaola.com'
 listid = ['2620', '2631', '2621', '2664', '2665', '2667']
 listurl = 'http://www.kaola.com/category/#id#.html'
-prodPriceUrl = 'http://www.kaola.com/recentlyViewAjax.html?id='
+prodAjaxUrl = 'http://www.kaola.com/recentlyViewAjax.html?id='
+prodPriceUrl = 'http://www.kaola.com/product/ajax/queryPromotionTitle.html?goodsId='
 timeinterval = 1
 
 user = 'root'
@@ -77,10 +78,9 @@ def handleList(id, listUrl):
 	print(listUrl + '\t' + str(len(atitle)))
 
 	for a in atitle:
-		prodhref = a.get('href')
-		prodhref = prodPriceUrl + prodhref.replace('/product/', '').replace('.html', '')
-		#print(prodhref)
-		saveProd(id, prodhref)
+		htmlUrl = a.get('href')
+		ajaxUrl = prodAjaxUrl + htmlUrl.replace('/product/', '').replace('.html', '')
+		saveProd(id, ajaxUrl, basedomain + htmlUrl)
 	
 	nexta = soup.find_all('a', class_='nextPage')
 	if nexta:
@@ -88,61 +88,16 @@ def handleList(id, listUrl):
 		#print(nexturl)
 		handleList(id, nexturl)
 
-def saveProd(id, url):
+def saveProd(id, ajaxUrl, htmlUrl):
 	try:
-		pordJson = getResContent(url).decode('utf-8')
+		pordJson = getResContent(ajaxUrl).decode('utf-8')
 		prod = json.loads(pordJson)
-		prod = prod['list'][0]
-		#print(str(prod))
-
-		prodId = prod['goodsId']
-		prodName = prod['title']
-		prodPrice = prod['actualCurrentPrice']
-		prodPriceApp = prod['actualCurrentPriceForApp']
-		prodImgList = prod['imageUrlList']
-		brandName = prod['brandName']
-		commentCount = prod['commentCount']
-		origCountry = prod['originCountryName']
-		discount = prod['discount']
-		favoriteCount = prod['favoriteCount']
-		prodProp = []
-		for prop in prod['goodsPropertyList']:
-			propName = prop['propertyNameCn']
-			propValue = ''
-			for propV in prop['propertyValues']:
-				propValue = propValue + " " + propV['propertyValue']
-			prodProp.append({propName : propValue})
-		taxRate = prod['internetComposeTaxRate']
-		marketPrice = prod['marketPrice']
-		memberCount = prod['memberCount']
-		memberPrice = prod['memberPrice']
-		memberPriceForApp = prod['memberPriceForApp']
-		suggestPrice = prod['suggestPrice']
-		warehouseCityShow = prod['warehouseCityShow']
-
-		record = {
-			'webdomain' : basedomain, 
-			'prod_id' : str(prodId), 
-			'cat_id' : str(id),
-			'cat_name' : '', 
-			'prod_name' : prodName, 
-			'prod_price' : str(prodPrice), 
-			'prod_price_app' : str(prodPriceApp), 
-			'prod_imgs' : str(prodImgList), 
-			'brand_name' : brandName, 
-			'comment_count' : str(commentCount), 
-			'orig_country' : origCountry, 
-			'discount' : str(discount), 
-			'favorite_count' : str(favoriteCount), 
-			'prod_props' : str(prodProp), 
-			'tax_rate' : str(taxRate), 
-			'market_price' : str(marketPrice), 
-			'member_count' : str(memberCount), 
-			'member_price' : str(memberPrice), 
-			'member_price_app' : str(memberPriceForApp), 
-			'suggest_price' : str(suggestPrice), 
-			'warehouse_city' : str(warehouseCityShow)
-		}
+		
+		record = {}
+		if prod['list'] and prod['list'][0]:
+			record = getProdObjByAjax(id, prod['list'][0])
+		else:
+			record = getProdObjByHtml(id, getDocument(htmlUrl))
 
 		cursor.execute(select_sql, record)
 
@@ -161,7 +116,116 @@ def saveProd(id, url):
 		#print(str(prodId) + operType + '成功')
 
 	except:
-		print("Unexpected error:", sys.exc_info()[0])
+		print(ajaxUrl)
+		print("Unexpected error:", sys.exc_info())
+
+def getProdObjByHtml(id, soup):
+	prodId = soup.find(id='goodsId')['value']
+	prodName = soup.find(class_='crumbs-title').string
+	origCountry = soup.find(class_='orig-country').find('span').string
+	brandName = soup.find(class_='orig-country').find('a').string
+
+	prodImgList = 'None'
+
+	commentCount = 'None'
+	favoriteCount = 'None'
+
+	priceJson = getResContent(prodPriceUrl + prodId).decode('utf-8')
+	priceObj = json.loads(priceJson)
+	prodPrice = priceObj['data']['currentPrice']
+	prodPriceApp = 'None'
+	marketPrice = priceObj['data']['marketPrice']
+	memberCount = priceObj['data']['memberCount']
+	memberPrice = priceObj['data']['memberPrice']
+	memberPriceForApp = 'None'
+	discount = 'None'
+	taxRate = 'None'
+	suggestPrice = priceObj['data']['suggestPrice']
+	warehouseCityShow = soup.find(class_='postage').find(class_='from').string
+
+	prodProp = []
+	prodAttrLi = soup.find(class_='goods_parameter').find_all('li')
+	for p in prodAttrLi:
+		attr = p.string
+		attr = attr.split('：')
+		attrObj = {attr[0] : attr[1]}
+		prodProp.append(attrObj)
+
+	record = {
+		'webdomain' : basedomain, 
+		'prod_id' : str(prodId), 
+		'cat_id' : str(id),
+		'cat_name' : '', 
+		'prod_name' : str(prodName), 
+		'prod_price' : str(prodPrice), 
+		'prod_price_app' : str(prodPriceApp), 
+		'prod_imgs' : str(prodImgList), 
+		'brand_name' : str(brandName), 
+		'comment_count' : str(commentCount), 
+		'orig_country' : str(origCountry), 
+		'discount' : str(discount), 
+		'favorite_count' : str(favoriteCount), 
+		'prod_props' : str(prodProp), 
+		'tax_rate' : str(taxRate), 
+		'market_price' : str(marketPrice), 
+		'member_count' : str(memberCount), 
+		'member_price' : str(memberPrice), 
+		'member_price_app' : str(memberPriceForApp), 
+		'suggest_price' : str(suggestPrice), 
+		'warehouse_city' : str(warehouseCityShow)
+	}
+	return record
+
+def getProdObjByAjax(id, prod):
+	prodId = prod['goodsId']
+	prodName = prod['title']
+	prodPrice = prod['actualCurrentPrice']
+	prodPriceApp = prod['actualCurrentPriceForApp']
+	prodImgList = prod['imageUrlList']
+	brandName = prod['brandName']
+	commentCount = prod['commentCount']
+	origCountry = prod['originCountryName']
+	discount = prod['discount']
+	favoriteCount = prod['favoriteCount']
+	prodProp = []
+	for prop in prod['goodsPropertyList']:
+		propName = prop['propertyNameCn']
+		propValue = ''
+		for propV in prop['propertyValues']:
+			propValue = propValue + " " + propV['propertyValue']
+		prodProp.append({propName : propValue})
+	taxRate = prod['internetComposeTaxRate']
+	marketPrice = prod['marketPrice']
+	memberCount = prod['memberCount']
+	memberPrice = prod['memberPrice']
+	memberPriceForApp = prod['memberPriceForApp']
+	suggestPrice = prod['suggestPrice']
+	warehouseCityShow = prod['warehouseCityShow']
+
+	record = {
+		'webdomain' : basedomain, 
+		'prod_id' : str(prodId), 
+		'cat_id' : str(id),
+		'cat_name' : '', 
+		'prod_name' : prodName, 
+		'prod_price' : str(prodPrice), 
+		'prod_price_app' : str(prodPriceApp), 
+		'prod_imgs' : str(prodImgList), 
+		'brand_name' : brandName, 
+		'comment_count' : str(commentCount), 
+		'orig_country' : origCountry, 
+		'discount' : str(discount), 
+		'favorite_count' : str(favoriteCount), 
+		'prod_props' : str(prodProp), 
+		'tax_rate' : str(taxRate), 
+		'market_price' : str(marketPrice), 
+		'member_count' : str(memberCount), 
+		'member_price' : str(memberPrice), 
+		'member_price_app' : str(memberPriceForApp), 
+		'suggest_price' : str(suggestPrice), 
+		'warehouse_city' : str(warehouseCityShow)
+	}
+	return record
 
 cnx = mysql.connector.connect(user=user, password=pwd, host=host, database=db, charset=charset)
 cursor = cnx.cursor()
