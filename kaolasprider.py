@@ -21,7 +21,7 @@ import sys
 httpheader = {'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8','Accept-Encoding':'gzip, deflate, sdch','Accept-Language':'zh-CN,zh;q=0.8', 'Cache-Control':'max-age=0', 'Connection':'keep-alive', 'Cookie':'davisit=14; usertrack=3/zPBVgQTXyikQ3gAwuQAg==; JSESSIONID-WKL-8IO=8xOepyQWlEuXyZfCTu65UGIjKd%2BbBbrUiirW2398NuCRhgPh%2FrkaGm%5CHtkt5neB0ZXit3Z%5CGt%2FPMRrOnfCbm%2BggcJSYtkPouqhA9nhVwR4Wu5ELpwKCHgKkjs9eBNA10xV5N32mlAHxM4tKx4xe07tm8VKUQ012lVuHeZIGcVEKLhDq%2B%3A1477549805588; _klhtxd_=31; KAOLA_NEW_USER_COOKIE=no; HTONLINE=c7acb8995375bf157943033bfc44aa84e8d6909e; _ntes_nnid=6b00fdd64addf0eb9b6082117d57a049,1477463406261; davisit=1; __da_ntes_utmfc=utmcsr%3D(direct)%7Cutmccn%3D(direct)%7Cutmcmd%3D(none); __kaola_usertrack=20161026143246618886; _da_ntes_uid=20161026143246618886; __nteskl_xk=1477470497842; NTES_KAOLA_NEW_CUST=1; NTES_KAOLA_RV=1299241_1477470497884_0%7C32178_1462335258910_0; NTESwebSI=601B66249B4EA89965A854A584511EBA.hzabj-haitao-web5.server.163.org-8010; _ntes_nuid=6b084a11f79d2b0668ebfd606d93fa10; SHIPPING_TO_CITY_CODE_NEW=440100; _dc_gtm_UA-60320154-1=1; _pzfxuvpc=1477463406437%7C4211452708121409958%7C7%7C1477471849616%7C3%7C7662468003821827363%7C1121463776128479421; _pzfxsvpc=1121463776128479421%7C1477470498173%7C4%7C; __utma=243297311.1857333332.1477463407.1477467244.1477470498.3; __utmb=243297311.4.10.1477470498; __utmc=243297311; __utmz=243297311.1477463407.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); __da_ntes_utma=2525167.729642695.1477463407.1477463550.1477470499.3; __da_ntes_utmb=2525167.7.10.1477470499; __da_ntes_utmz=2525167.1477463407.1.1.utmcsr%3D(direct)%7Cutmccn%3D(direct)%7Cutmcmd%3D(none); Hm_lvt_645b0165bab4840cd77ab93b4bc41821=1477463407; Hm_lpvt_645b0165bab4840cd77ab93b4bc41821=1477471851; _ga=GA1.2.1857333332.1477463407', 'Host':'www.kaola.com',  'Upgrade-Insecure-Requests':'1','User-Agent':'Mozilla/5.0 (Windows NT 5.2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36'}
 
 basedomain = 'http://www.kaola.com'
-listid = ['2620', '2631', '2621', '2664', '2665', '2667']
+catUrl = 'http://www.kaola.com/getFrontCategory.shtml'
 listurl = 'http://www.kaola.com/category/#id#.html'
 prodAjaxUrl = 'http://www.kaola.com/recentlyViewAjax.html?id='
 prodPriceUrl = 'http://www.kaola.com/product/ajax/queryPromotionTitle.html?goodsId='
@@ -70,7 +70,7 @@ def getResContent(url):
 def getDocument(url):
 	return BeautifulSoup(getResContent(url), 'html.parser')
 
-def handleList(id, listUrl):
+def handleList(cid, listUrl):
 	soup = getDocument(listUrl)
 
 	atitle = soup.find_all('a', class_='title')
@@ -80,24 +80,24 @@ def handleList(id, listUrl):
 	for a in atitle:
 		htmlUrl = a.get('href')
 		ajaxUrl = prodAjaxUrl + htmlUrl.replace('/product/', '').replace('.html', '')
-		saveProd(id, ajaxUrl, basedomain + htmlUrl)
+		saveProd(cid, ajaxUrl, basedomain + htmlUrl)
 	
 	nexta = soup.find_all('a', class_='nextPage')
 	if nexta:
 		nexturl = basedomain + nexta[0].get('href')
 		#print(nexturl)
-		handleList(id, nexturl)
+		handleList(cid, nexturl)
 
-def saveProd(id, ajaxUrl, htmlUrl):
+def saveProd(cid, ajaxUrl, htmlUrl):
 	try:
 		pordJson = getResContent(ajaxUrl).decode('utf-8')
 		prod = json.loads(pordJson)
 		
 		record = {}
 		if prod['list'] and prod['list'][0]:
-			record = getProdObjByAjax(id, prod['list'][0])
+			record = getProdObjByAjax(cid, prod['list'][0])
 		else:
-			record = getProdObjByHtml(id, getDocument(htmlUrl))
+			record = getProdObjByHtml(cid, getDocument(htmlUrl))
 
 		cursor.execute(select_sql, record)
 
@@ -119,7 +119,7 @@ def saveProd(id, ajaxUrl, htmlUrl):
 		print(ajaxUrl)
 		print("Unexpected error:", sys.exc_info())
 
-def getProdObjByHtml(id, soup):
+def getProdObjByHtml(cid, soup):
 	prodId = soup.find(id='goodsId')['value']
 	prodName = soup.find(class_='crumbs-title').string
 	origCountry = soup.find(class_='orig-country').find('span').string
@@ -154,8 +154,8 @@ def getProdObjByHtml(id, soup):
 	record = {
 		'webdomain' : basedomain, 
 		'prod_id' : str(prodId), 
-		'cat_id' : str(id),
-		'cat_name' : '', 
+		'cat_id' : str(cid[0]),
+		'cat_name' : str(cid[1]), 
 		'prod_name' : str(prodName), 
 		'prod_price' : str(prodPrice), 
 		'prod_price_app' : str(prodPriceApp), 
@@ -176,7 +176,7 @@ def getProdObjByHtml(id, soup):
 	}
 	return record
 
-def getProdObjByAjax(id, prod):
+def getProdObjByAjax(cid, prod):
 	prodId = prod['goodsId']
 	prodName = prod['title']
 	prodPrice = prod['actualCurrentPrice']
@@ -205,8 +205,8 @@ def getProdObjByAjax(id, prod):
 	record = {
 		'webdomain' : basedomain, 
 		'prod_id' : str(prodId), 
-		'cat_id' : str(id),
-		'cat_name' : '', 
+		'cat_id' : str(cid[0]),
+		'cat_name' : str(cid[1]), 
 		'prod_name' : prodName, 
 		'prod_price' : str(prodPrice), 
 		'prod_price_app' : str(prodPriceApp), 
@@ -227,12 +227,31 @@ def getProdObjByAjax(id, prod):
 	}
 	return record
 
+def getCat():
+	catJson = getResContent(catUrl).decode('utf-8')
+	catList = json.loads(catJson)
+	catList = catList['frontCategoryList']
+
+	categoryList = []
+
+	for pc in catList:
+		for c in pc['childrenNodeList']:
+			catId = c['categoryId']
+			catName = c['categoryName']
+			c = [catId, catName]
+			categoryList.append(c)
+
+	return	categoryList
+
 cnx = mysql.connector.connect(user=user, password=pwd, host=host, database=db, charset=charset)
 cursor = cnx.cursor()
 
-for id in listid:
-	url = listurl.replace('#id#', id)
-	handleList(id, url)
+clist = getCat()
+#print(str(clist))
+
+for cid in clist:
+	url = listurl.replace('#id#', str(cid[0]))
+	handleList(cid, url)
 
 cursor.close()
 cnx.close()
