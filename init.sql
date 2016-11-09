@@ -2,7 +2,8 @@
 SQLyog Community v9.62 
 MySQL - 5.6.26 : Database - sprider
 *********************************************************************
-*/
+*/
+
 
 /*!40101 SET NAMES utf8 */;
 
@@ -39,7 +40,26 @@ CREATE TABLE `t_product` (
   `suggest_price` varchar(200) DEFAULT NULL COMMENT '建议价',
   `warehouse_city` varchar(200) DEFAULT NULL COMMENT '保税区',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=780 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+
+CREATE TABLE `t_taobao_top` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `sprider_date` varchar(10) NOT NULL COMMENT '抓取日期',
+  `cat1` varchar(200) DEFAULT NULL COMMENT '分类1',
+  `cat2` varchar(200) DEFAULT NULL COMMENT '分类2',
+  `cat3` varchar(200) DEFAULT NULL,
+  `top_name` varchar(200) DEFAULT NULL COMMENT '排行榜名称',
+  `focus` int(11) DEFAULT NULL COMMENT '排名',
+  `key_word` varchar(200) DEFAULT NULL COMMENT '关键字',
+  `url` varchar(1000) DEFAULT NULL,
+  `num` decimal(10,0) DEFAULT NULL COMMENT '关注指数',
+  `percent` varchar(50) DEFAULT NULL,
+  `uod_pos` int(11) DEFAULT NULL COMMENT '升降位次',
+  `uod_pos_arrow` int(11) DEFAULT NULL COMMENT '升降位次方向   0下降1上升2平',
+  `uod_percent` varchar(50) DEFAULT NULL COMMENT '升降幅度',
+  `uod_percent_arrow` int(11) DEFAULT NULL COMMENT '升降幅度方向    0下降1上升2平',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
