@@ -14,8 +14,6 @@ MySQL - 5.6.26 : Database - sprider
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 /*Table structure for table `t_product` */
 
-DROP TABLE IF EXISTS `t_product`;
-
 CREATE TABLE `t_product` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '逻辑主键',
   `webdomain` varchar(500) NOT NULL COMMENT '网站域名',
