@@ -40,6 +40,20 @@ jsonEnd = 'g_srp_loadCss();'
 
 topType = ['search', 'brand']
 
+user = 'root'
+pwd  = '123456'
+host = '127.0.0.1'
+db   = 'sprider'
+charset = 'utf8'
+
+insert_sql = '''INSERT INTO t_taobao_top(sprider_date,cat1,cat2,cat3,top_name,focus,key_word,
+	url,num,percent,uod_pos,uod_pos_arrow,uod_percent,uod_percent_arrow) 
+	VALUES (%(sprider_date)s,%(cat1)s,%(cat2)s,%(cat3)s,%(top_name)s,%(focus)s,%(key_word)s,
+	%(url)s,%(num)s,%(percent)s,%(uod_pos)s,%(uod_pos_arrow)s,%(uod_percent)s,%(uod_percent_arrow)s)'''
+
+delete_sql = '''DELETE FROM t_taobao_top WHERE sprider_date=%(sprider_date)s 
+	and cat1=%(cat1)s and cat2=%(cat2)s and cat3=%(cat3)s and top_name=%(top_name)s'''
+
 def getResContent(url):
 	try:
 		req = urllib.request.Request(url, None, httpheader)
@@ -89,6 +103,17 @@ def getTabUrls(url):
 
 	return tabUrls
 
+def getCatUrls(url):
+	data = getJsonData(url)
+
+	catUrls = []
+	for sub in data['mods']['nav']['data']['common']:
+		for catData in sub['sub']:
+			url = {'name' : catData['text'], 'parent' : sub['text'], 'url' : 'https://' + basedomain + catData['url']}
+			catUrls.append(url)
+
+	return catUrls
+
 def getTopUrls(url):
 	data = getJsonData(url)
 
@@ -100,34 +125,61 @@ def getTopUrls(url):
 
 	return topUrls
 
-def getTopData(url):
-	#print(url)
-	data = getJsonData(url)
+def saveTopData(url, cat1, cat2, cat3, topName):
+	try:
+		data = getJsonData(url)
 
-	topList = []
-	for top in data['mods']['wbang']['data']['list']:
-		record = {
-			'focus' : top['col1']['text'],
-			'keyWord' : top['col2']['text'],
-			'url': top['col2']['url'],
-			'num': top['col4']['num'],
-			'percent': top['col4']['percent'],
-			'upOrDownPos': top['col5']['text'],
-			'upOrDownPosArrow': top['col5']['upOrDown'],
-			'upOrDownPercent': top['col6']['text'],
-			'upOrDownPercentArrow': top['col6']['upOrDown']
-		}
-		#print(record)
-		topList.append(record)
-		#break
-	return topList
+		sprider_date = time.strftime("%Y%m%d", time.localtime())
+
+		cursor.execute(delete_sql, {'sprider_date' : sprider_date,
+				'cat1' : cat1,
+				'cat2' : cat2,
+				'cat3' : cat3,
+				'top_name' : topName})
+
+		for top in data['mods']['wbang']['data']['list']:
+			record = {
+				'sprider_date' : sprider_date,
+				'cat1' : cat1,
+				'cat2' : cat2,
+				'cat3' : cat3,
+				'top_name' : topName,
+				'focus' : top['col1']['text'],
+				'key_word' : top['col2']['text'],
+				'url' : top['col2']['url'],
+				'num' : top['col4']['num'],
+				'percent' : top['col4']['percent'],
+				'uod_pos' : top['col5']['text'],
+				'uod_pos_arrow' : top['col5']['upOrDown'],
+				'uod_percent' : top['col6']['text'],
+				'uod_percent_arrow' : top['col6']['upOrDown']
+			}
+			cursor.execute(insert_sql, record)
+
+		cnx.commit()
+	except:
+		print(url)
+		print("Unexpected error:", sys.exc_info())
+		
+
+cnx = mysql.connector.connect(user=user, password=pwd, host=host, database=db, charset=charset)
+cursor = cnx.cursor()
 
 tabUrls = getTabUrls(indexUrl)
 for tab in tabUrls:
-	topUrls = getTopUrls(tab['url'])
-	for top in topUrls:
-		data = getTopData(top['url'])
-		print(tab['name'] + top['name'])
-		#print(data)
+	catUrls = getCatUrls(tab['url'])
+	for cat in catUrls:
+		topUrls = getTopUrls(cat['url'])
+		for top in topUrls:
+			saveTopData(top['url'], tab['name'], cat['parent'], cat['name'], top['name'])
+			#print(cat['name'] + tab['name'] + top['name'])
+			#print(data)
+			#break
 		#break
-	break
+	#break
+
+cursor.close()
+cnx.close()
+
+
+print('处理完成')
