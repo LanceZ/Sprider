@@ -8,4 +8,6 @@ python3.3 3.4下测试通过
 
 淘宝排行榜 —— taobaotop.py
 
+江楠鲜品 —— freshjn.py
+
 数据库表脚本 —— init.sql
