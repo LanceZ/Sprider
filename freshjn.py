@@ -16,7 +16,6 @@ from bs4 import BeautifulSoup
 import gzip
 import io
 import json
-import mysql.connector
 import sys
 import os
 
@@ -50,7 +49,7 @@ def saveProdImg(data):
 	prod = prodJson['product']
 	prodImgs = prod['photos']
 	
-	path = r"d:/Project/sprider/freshjn/prods/" + str(prod['id'])
+	path = r"./freshjn/prods/" + str(prod['id'])
 	try:
 		os.makedirs(path)
 	except:

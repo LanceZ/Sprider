@@ -15,7 +15,7 @@ from bs4 import BeautifulSoup
 import gzip
 import io
 import json
-import mysql.connector
+import pymysql.cursors
 import sys
 
 httpheader = {'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8','Accept-Encoding':'gzip, deflate, sdch','Accept-Language':'zh-CN,zh;q=0.8', 'Cache-Control':'max-age=0', 'Connection':'keep-alive', 'Cookie':'davisit=14; usertrack=3/zPBVgQTXyikQ3gAwuQAg==; JSESSIONID-WKL-8IO=8xOepyQWlEuXyZfCTu65UGIjKd%2BbBbrUiirW2398NuCRhgPh%2FrkaGm%5CHtkt5neB0ZXit3Z%5CGt%2FPMRrOnfCbm%2BggcJSYtkPouqhA9nhVwR4Wu5ELpwKCHgKkjs9eBNA10xV5N32mlAHxM4tKx4xe07tm8VKUQ012lVuHeZIGcVEKLhDq%2B%3A1477549805588; _klhtxd_=31; KAOLA_NEW_USER_COOKIE=no; HTONLINE=c7acb8995375bf157943033bfc44aa84e8d6909e; _ntes_nnid=6b00fdd64addf0eb9b6082117d57a049,1477463406261; davisit=1; __da_ntes_utmfc=utmcsr%3D(direct)%7Cutmccn%3D(direct)%7Cutmcmd%3D(none); __kaola_usertrack=20161026143246618886; _da_ntes_uid=20161026143246618886; __nteskl_xk=1477470497842; NTES_KAOLA_NEW_CUST=1; NTES_KAOLA_RV=1299241_1477470497884_0%7C32178_1462335258910_0; NTESwebSI=601B66249B4EA89965A854A584511EBA.hzabj-haitao-web5.server.163.org-8010; _ntes_nuid=6b084a11f79d2b0668ebfd606d93fa10; SHIPPING_TO_CITY_CODE_NEW=440100; _dc_gtm_UA-60320154-1=1; _pzfxuvpc=1477463406437%7C4211452708121409958%7C7%7C1477471849616%7C3%7C7662468003821827363%7C1121463776128479421; _pzfxsvpc=1121463776128479421%7C1477470498173%7C4%7C; __utma=243297311.1857333332.1477463407.1477467244.1477470498.3; __utmb=243297311.4.10.1477470498; __utmc=243297311; __utmz=243297311.1477463407.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); __da_ntes_utma=2525167.729642695.1477463407.1477463550.1477470499.3; __da_ntes_utmb=2525167.7.10.1477470499; __da_ntes_utmz=2525167.1477463407.1.1.utmcsr%3D(direct)%7Cutmccn%3D(direct)%7Cutmcmd%3D(none); Hm_lvt_645b0165bab4840cd77ab93b4bc41821=1477463407; Hm_lpvt_645b0165bab4840cd77ab93b4bc41821=1477471851; _ga=GA1.2.1857333332.1477463407', 'Host':'www.kaola.com',  'Upgrade-Insecure-Requests':'1','User-Agent':'Mozilla/5.0 (Windows NT 5.2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36'}
@@ -103,17 +103,16 @@ def saveProd(cid, ajaxUrl, htmlUrl):
 
 		operType = ''
 
-		for prodCount in cursor:
-			if (prodCount[0] > 0):
-				cursor.execute(update_sql, record)
-				operType = '更新'
-			else:
-				cursor.execute(insert_sql, record)
-				operType = '插入'
-			break
+		result = cursor.fetchone()
+		if (result['prodCount'] <= 0):
+			cursor.execute(insert_sql, record)
+			operType = '插入'
+		else:
+			cursor.execute(update_sql, record)
+			operType = '更新'
 
 		cnx.commit()
-		#print(str(prodId) + operType + '成功')
+		#print(ajaxUrl + operType + '成功')
 
 	except:
 		print(ajaxUrl)
@@ -243,7 +242,7 @@ def getCat():
 
 	return	categoryList
 
-cnx = mysql.connector.connect(user=user, password=pwd, host=host, database=db, charset=charset)
+cnx = pymysql.connect(user=user, password=pwd, host=host, db=db, charset=charset, cursorclass=pymysql.cursors.DictCursor)
 cursor = cnx.cursor()
 
 clist = getCat()
