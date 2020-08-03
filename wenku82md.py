@@ -97,7 +97,8 @@ with open(mdPath, "w", encoding="utf-8") as fo:
 						imgname = os.path.basename(imgurl)
 						imgnames.append(imgname)
 						if not os.path.exists(imgPath + '/' + imgname):
-							urllib.request.urlretrieve(imgurl, imgPath + '/' + imgname)
+							urllib.request.urlretrieve(imgurl, imgPath + '/' + imgname + '.tmp')
+							os.rename(imgPath + '/' + imgname + '.tmp', imgPath + '/' + imgname)
 							print('下载图片 ' + imgurl)
 
 					if content.find('ul'):
