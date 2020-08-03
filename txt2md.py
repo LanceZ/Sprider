@@ -9,12 +9,11 @@ import urllib.request
 from bs4 import BeautifulSoup
 from http.cookiejar import CookieJar
 
-if len(sys.argv) < 3:
-	print('txt2md.py inputTextFile')
+if len(sys.argv) < 2:
+	print('txt2md.py id')
 	sys.exit()
 
-inputFile = sys.argv[1]
-id = sys.argv[2]
+id = sys.argv[1]
 if len(id) < 4:
 	prefix = '0'
 else:
@@ -23,6 +22,10 @@ else:
 imgPath = os.path.abspath('.') + '/' + id
 if not os.path.exists(imgPath):
 	os.makedirs(imgPath)
+
+mdPath = id + '.md'
+if os.path.exists(mdPath):
+	os.remove(mdPath)
 
 httpheader = {
 	'accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -36,9 +39,9 @@ httpheader = {
 
 basedomain = 'www.wenku8.net'
 indexUrl = 'https://www.wenku8.net/novel/' + prefix + '/' + id + '/index.htm'
-imgIndexUrl = 'https://www.wenku8.net/novel/' + prefix + '/' + id + '/'
+resUrl = 'https://www.wenku8.net/novel/' + prefix + '/' + id + '/'
 
-print('开始处理 ' + inputFile)
+print('开始处理 ' + id)
 
 def getResContent(url):
 	try:
@@ -62,45 +65,48 @@ def getResContent(url):
 def getDocument(url):
 	return BeautifulSoup(getResContent(url), 'html.parser')
 
-def handleImg(line):
+with open(mdPath, "w", encoding="utf-8") as fo:
 	soup = getDocument(indexUrl)
 
-	ret = []
+	title = soup.find('div', id='title')
+	print(title.text)
+	fo.write('\r\n')
+	fo.write('<' + title.text + '>\r\n')
+	fo.write('\r\n')
 
-	iiu = imgIndexUrl
-	lasthref = ''
-	for a in soup.find_all('a', text='插图'):
-		title = (a.parent.parent.find_previous('td', class_='vcss'))
-		if title.text in line and ' 插图' in line:
-			lasthref = a['href']
-	iiu += lasthref
-	
-	soup = getDocument(iiu)
-	imgs = soup.find_all('img', class_='imagecontent')
-	for img in imgs:
-		imgurl = img['src']
-		imgname = os.path.basename(imgurl)
-		ret.append(imgname)
-		if not os.path.exists(imgPath + '/' + imgname):
-			urllib.request.urlretrieve(imgurl, imgPath + '/' + imgname)
-			print('下载图片 ' + imgurl)
+	trs = soup.find('table', class_='css').find_all('tr')
 
-	return ret
+	for tr in trs:
+		tds = tr.find_all('td')
+		for td in tds:
+			if td['class'][0] == 'vcss':
+				print(td.text)
+				fo.write('##' + td.text + '\r\n')
+			if td['class'][0] == 'ccss':
+				a = td.find('a')
+				if a:
+					print(td.text + ' ' + a['href'])
+					fo.write('###' + td.text)
+					soupContent = getDocument(resUrl + a['href'])
+					content = soupContent.find('div', id='content')
+					
+					imgs = soupContent.find_all('img', class_='imagecontent')
+					imgnames = []
+					for img in imgs:
+						imgurl = img['src']
+						imgname = os.path.basename(imgurl)
+						imgnames.append(imgname)
+						if not os.path.exists(imgPath + '/' + imgname):
+							urllib.request.urlretrieve(imgurl, imgPath + '/' + imgname)
+							print('下载图片 ' + imgurl)
 
-if os.path.exists("%s.md" % inputFile):
-	os.remove("%s.md" % inputFile)
-with open(inputFile, "r", encoding="utf-8") as fi, open("%s.md" % inputFile, "w", encoding="utf-8") as fo:
-	for line in fi:
-		newline = html.unescape(line)
-		newline = re.sub('^.+轻小说文库.+', '', newline)
-		newline = re.sub('^[◆|◇]+$', '', newline)
-		if not re.match('^<.+>', line):
-			newline = re.sub('(^\S+)', lambda x : '###' + x.group(0), newline)
-		fo.write(newline)
-		if re.match('^###.*插图', newline):
-			print('处理插图 ' + line)
-			imgs = handleImg(line)
-			fo.write('\r\n')
-			for img in imgs:
-				fo.write('\t![avatar](' + img + ')\r\n')
-		
+					if content.find('ul'):
+						[ctag.extract() for ctag in content.find_all('ul')]
+					if content.find('div'):
+						[ctag.extract() for ctag in content.find_all('div')]
+					fo.write(re.sub('\n{3,}', '\n\n', content.text) + '\r\n')
+
+					for iname in imgnames:
+						fo.write('\t![avatar](' + iname + ')\r\n')
+					if len(imgnames) > 0:
+						fo.write('\r\n')
