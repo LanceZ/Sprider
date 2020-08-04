@@ -97,6 +97,9 @@ with open(mdPath, "w", encoding="utf-8") as fo:
 						imgname = os.path.basename(imgurl)
 						imgnames.append(imgname)
 						if not os.path.exists(imgPath + '/' + imgname):
+							opener = urllib.request.build_opener()
+							opener.addheaders = [('user-agent','Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36')]
+							urllib.request.install_opener(opener)
 							urllib.request.urlretrieve(imgurl, imgPath + '/' + imgname + '.tmp')
 							os.rename(imgPath + '/' + imgname + '.tmp', imgPath + '/' + imgname)
 							print('下载图片 ' + imgurl)
