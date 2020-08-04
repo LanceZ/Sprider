@@ -27,19 +27,19 @@ mdPath = id + '.md'
 if os.path.exists(mdPath):
 	os.remove(mdPath)
 
+basedomain = 'www.wenku8.net'
+indexUrl = 'https://www.wenku8.net/novel/' + prefix + '/' + id + '/index.htm'
+resUrl = 'https://www.wenku8.net/novel/' + prefix + '/' + id + '/'
+
 httpheader = {
 	'accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
 	'accept-encoding':'gzip, deflate, sdch, br',
 	'accept-language':'zh-CN,zh;q=0.8',
-	'cookie':'cna=dfKyDFj//0MCAQ4X6UzSx94l; _um_uuid=81cdb81c18c2d123ba84863294665f58; lzstat_uv=21891793552587658154|3492151@3600092@3008922; miid=7009961616301374574; thw=cn; _cc_=W5iHLLyFfA%3D%3D; tg=0; uc3=nk2=&id2=&lg2=; hng=CN%7Czh-cn%7CCHN; tracknick=; v=0; cookie2=1c17cf2f238d287c340930eaaaf7464f; t=041ad95e5f2383e6ceb3966f994d2f81; mt=ci%3D-1_1; l=AsvLHLLntOD/C4J4L41PG6H522W1t98r; isg=AqOjltBK_6uRKbwik3qdLV9QMuH4hjfa4BJ5e9UAKIKwFMI2XWj_Ko4GeFPg',
-	'referer':'https://top.taobao.com/index.php?spm=a1z5i.1.2.1.hUTg2J&topId=HOME',
+	'cookie':'',
+	'referer':basedomain,
 	'upgrade-insecure-requests':'1',
 	'user-agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36'
 }
-
-basedomain = 'www.wenku8.net'
-indexUrl = 'https://www.wenku8.net/novel/' + prefix + '/' + id + '/index.htm'
-resUrl = 'https://www.wenku8.net/novel/' + prefix + '/' + id + '/'
 
 print('开始处理 ' + id)
 
