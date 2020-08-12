@@ -63,7 +63,7 @@ def getResContent(url):
 	return None
 
 def getDocument(url):
-	return BeautifulSoup(getResContent(url), 'html.parser')
+	return BeautifulSoup(getResContent(url), 'html.parser', from_encoding="gb18030")
 
 with open(mdPath, "w", encoding="utf-8") as fo:
 	soup = getDocument(indexUrl)
