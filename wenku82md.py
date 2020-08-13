@@ -10,7 +10,7 @@ from bs4 import BeautifulSoup
 from http.cookiejar import CookieJar
 
 if len(sys.argv) < 2:
-	print('txt2md.py id')
+	print('wenku82md.py id')
 	sys.exit()
 
 id = sys.argv[1]
